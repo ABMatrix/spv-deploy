@@ -4,6 +4,10 @@
 
 如果部署的位置和devnet的网是联通的话，其中的许多url/ip可以直接用，只需要配置对应的正确的`device-owner`和`watcher-device-id`
 
+# 获得2个参数
+
+首先选择要增加spv验证功能的watcher，获得他的`device-owner`和`watcher-device-id`
+配置文件中可以查看
 
 # 链上注册enclave_hash
 
@@ -19,7 +23,7 @@
 ![这是一张PNG图片](update_issue_enclavehash.png "示例PNG图片")
 
 
-sgx版本的monitor也按照相同方式注册enclavehash 上链
+**sgx版本的monitor也按照相同方式注册enclavehash 上链**
 
 # SPV
 
@@ -43,12 +47,26 @@ cookie是bitcoind的rpc认证
 `--device-owner= --watcher-device-id=` 选择一台 watcher(keyring)，然后填入其device_owner和device_id
 
 这两个在本btc版本中用不到，他们是eth的rpc地址
-`--execution-rpc=http://192.168.41.21:8545 --consense-rpc=http://192.168.41.21:4000`  这个填prysm和geth的rpc地址
+`--execution-rpc=http://192.168.41.21:8545 --consense-rpc=http://192.168.41.21:3500`  这个填prysm和geth的rpc地址
 --execution-rpc是geth
 --consense-rpc是prysm
 
-## 3. 启动后
-放着等待同步完成
+### 2.1 启动
+
+这个是启动后的日志:`docker log xxxx`
+他会开始通过p2p和rpc下载blockheader
+
+![这是一张PNG图片](after_start_01.png "示例PNG图片")
+
+图中是注册过且已经同步完的重启后的log
+
+这个图是rpc同步完后的日志，开始增量同步：
+
+![这是一张PNG图片](after_start_02.png "示例PNG图片")
+
+## 3. 启动后等待p2p同步
+
+放着等待p2p的同步完成
 大约20分钟后
 可以通过`curl http://127.0.0.1:3023/ping/a`
 
@@ -61,6 +79,21 @@ cookie是bitcoind的rpc认证
 ping后的返回值大概如下
 
 ` [a] sgx=[true] p2p_height=[3192173] p2p_tip=[0000000000532c233dc0481ff56a6e6294824cf81123e37f98c3c87ad2810ae0] rpc_tip=[0000000000532c233dc0481ff56a6e6294824cf81123e37f98c3c87ad2810ae0] `
+
+## 4. curl测试
+
+通过mempool的btc浏览器找到几个最近的交易tx:
+https://mempool.space/testnet
+
+可以`curl http://127.0.0.1:3023/verify_tx/c8be7376e5cd2f851c6e90b172ecbc3305c0349a2e15eecbd1745ee8373cff17`获取某个320万高度的某个交易的存在与否的证明
+
+如图 resp->errror = false 证明这个交易存在
+
+![这是一张PNG图片](curl_test_spv.png "示例PNG图片")
+
+否则随意填写fake的txid，会报错找不到
+
+![这是一张PNG图片](curl_test_spv_false.png "示例PNG图片")
 
 # monitor
 ## 1. pull images
@@ -108,3 +141,53 @@ image照旧
 `monitor_sgx = ture`
 
  其他照旧
+
+# 判断eth的2个节点是否同步完成
+
+https://docs.prylabs.network/docs/troubleshooting/issues-errors
+
+![这是一张PNG图片](eth_sync_status.png "示例PNG图片")
+
+` curl http://192.168.41.21:3500/eth/v1/node/syncing | jq`
+
+其中
+
+"is_syncing":false  表示 beacon 同步完成了
+
+"is_optimistic":false  表示geth没同步完成
+
+同步进度如图是600多万
+需要1000多万
+
+# eth同步完后的部署
+
+## 链上注册eth的checkpoint
+
+checkpoint集合:
+https://eth-clients.github.io/checkpoint-sync-endpoints/
+
+![这是一张PNG图片](checkpoint_01.png "示例PNG图片")
+
+如图复制，然后用ethbeacon测试有效性:
+
+`curl http://192.168.41.21:3500/eth/v1/beacon/light_client/bootstrap/0xb3a78d23a00a4f192ab8ca2e5cb41b71f48b45282c62d3c4d58ab4f4b0581ab3`
+
+![这是一张PNG图片](checkpoint_02.png "示例PNG图片")
+
+然后bool链上添加这个checkpoint
+
+![这是一张PNG图片](checkpoint_03.png "示例PNG图片")
+
+
+## spv
+
+ 将上面spv的
+ `--execution-rpc=http://192.168.41.21:8545 --consense-rpc=http://192.168.41.21:3500`两个参数填入，同时删除`--disable-helios`
+
+## monitor
+
+ 将上面的monitor新配置`[reg_config]`中的`only_btc = false`填为false
+
+## watcher
+
+ 照旧
