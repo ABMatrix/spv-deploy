@@ -13,6 +13,14 @@
 
 ![这是一张PNG图片](./print_mrenclave.png "示例PNG图片")
 
+将返回值 `5ba761224e5231608235f426776ffffc0c0b46885d9dc4e10c52f3d13309d04a`
+更新到版本上
+
+![这是一张PNG图片](update_issue_enclavehash.png "示例PNG图片")
+
+
+sgx版本的monitor也按照相同方式注册enclavehash 上链
+
 # SPV
 
 ## 1. pull images 
@@ -47,6 +55,8 @@ cookie是bitcoind的rpc认证
 查看同步进度:等待p2p_height=320多万左右就是同步完了
 （rpc-btc和rpc-eth高度不用等,已经同步完了）
 之后大约25分钟p2p-btc能同步完毕
+
+![这是一张PNG图片](sync_status_spv.png "示例PNG图片")
 
 ping后的返回值大概如下
 
