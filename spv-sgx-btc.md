@@ -191,3 +191,43 @@ https://eth-clients.github.io/checkpoint-sync-endpoints/
 ## watcher
 
  照旧
+
+
+ ## 更新
+ boolnetwork/btc-spv:1025
+
+ 功能: /status
+
+ ```
+#[derive(Clone, Serialize)]
+struct SyncStatus {
+    p2p_btc_height: u64,
+    rpc_btc_tip: u64,
+    lightclient_eth_height: u64,
+    btc_chainid: u64,
+    eth_chainid: u64,
+}
+ ```
+
+example:
+
+```
+curl http://127.0.0.1:3022/status
+
+{"resp":"{\"p2p_btc_height\":3195409,\"rpc_btc_tip\":3195409,\"lightclient_eth_height\":6941548,\"btc_chainid\":271847360,\"eth_chainid\":11155111}","sig":"176e06f24a892f66fd95ebd7e9580ca54d15c41294abc57da93a8159859001532094cb56f7d8e0b8a35ad35cfcf2a53db37bd7bcdb21d5f09d61318baace4c07","pubkey":"7548d70e29dba05c23ba7fdf17094ab9523c6d480f54c74a7cf5467434c2af83"}
+
+```
+
+--helios-test  能够只测试当前的eth节点能否使用
+
+启动命令:
+
+```
+RUST_LOG=spv=debug,client=debug ./target/release/btc-spv --daemon-rpc-addr="192.168.35.216:18332" --http-addr="127.0.0.1:3022" --subclient-url="ws://192.168.200.16:9944" --device-owner="0x8fb4Be3a8ABa83a17ce4206e6C28a581D1EfE5A0" --watcher-device-id="0x37f1683e0f243a5151395597770f7b95425f42ef84ddbd15ecc099ba484e50c6" --cookie="btc:btc" --execution-rpc=http://192.168.41.21:8545 --consensus-rpc=http://192.168.41.21:3500  --eth-network=sepolia --helios-test
+```
+
+正常启动 带helios beta-testnet 有status:
+```
+docker run --name=btc-spv-devnet -d --net=host --restart=unless-stopped  --device /dev/sgx/enclave --device /dev/sgx/provision -v /mnt/data-devnet/db:/root/occlum_instance/db -v /mnt/data-devnet/naka:/root/occlum_instance/btc boolnetwork/btc-spv:1018 bash -c "cd /root/occlum_instance;RUST_LOG=client=debug,spv=debug occlum run /bin/btc-spv --daemon-rpc-addr="192.168.36.15:18332" --cookie="btc:btc" --http-addr="127.0.0.1:3023" --subclient-url="ws://192.168.200.13:9944" --device-owner="0x8fb4Be3a8ABa83a17ce4206e6C28a581D1EfE5A0" --watcher-device-id="0x231dd5d62c66972f30a72fd60ef2441a6157026efb605d1301d8d63c96fdbeb2" --execution-rpc=http://192.168.41.21:8545 --consense-rpc=http://192.168.41.21:3500 --sgx-enable --store=/host/db --eth-network=sepolia"
+
+```
